@@ -35,7 +35,7 @@ function platform.update(dt)
 	end
 end
 function platform.draw()
-	love.graphics.rectangle('line', platform.position_x, platform.position_y, platform.width, platform.height)
+	love.graphics.rectangle('fill', platform.position_x, platform.position_y, platform.width, platform.height)
 end
 
 --Brick object
@@ -74,14 +74,15 @@ function bricks.update( dt )
 	end
 end
 function bricks.construct_level()
-   for row = 1, bricks.rows do
-      for col = 1, bricks.columns do
-         local new_brick_position_x = bricks.top_left_position_x + (col - 1) * (bricks.brick_width + bricks.horizontal_distance)
-         local new_brick_position_y = bricks.top_left_position_y + ( row - 1 ) * (bricks.brick_height + bricks.vertical_distance)
-         local new_brick = bricks.new_brick(new_brick_position_x, new_brick_position_y)
-         bricks.add_to_current_level_bricks(new_brick)
-      end      
-   end   
+	--draws a matrix of bricks
+	for row = 1, bricks.rows do
+		for col = 1, bricks.columns do
+			local new_brick_position_x = bricks.top_left_position_x + (col - 1) * (bricks.brick_width + bricks.horizontal_distance)
+			local new_brick_position_y = bricks.top_left_position_y + ( row - 1 ) * (bricks.brick_height + bricks.vertical_distance)
+			local new_brick = bricks.new_brick(new_brick_position_x, new_brick_position_y)
+			bricks.add_to_current_level_bricks(new_brick)
+		end      
+	end   
 end
 
 
@@ -100,14 +101,15 @@ function walls.new_wall(position_x, position_y, width, height)
    return({position_x = position_x, position_y = position_y, width = width, height = height})
 end
 function walls.construct_walls()
-   local left_wall = walls.new_wall(0, 0, walls.wall_thickness, love.graphics.getHeight())
-   local right_wall = walls.new_wall(love.graphics.getWidth() - walls.wall_thickness, 0, walls.wall_thickness, love.graphics.getHeight())
-   local top_wall = walls.new_wall(0, 0, love.graphics.getWidth(), walls.wall_thickness)
-   local bottom_wall = walls.new_wall(0, love.graphics.getHeight() - walls.wall_thickness, love.graphics.getWidth(), walls.wall_thickness) 
-   walls.current_level_walls["left"] = left_wall
-   walls.current_level_walls["right"] = right_wall
-   walls.current_level_walls["top"] = top_wall
-   walls.current_level_walls["bottom"] = bottom_wall
+	-- draws a rectangle with (starting x, starting y, thickness and height of screen) for a wall. Same logic on other walls.
+	local left_wall = walls.new_wall(0, 0, walls.wall_thickness, love.graphics.getHeight())
+	local right_wall = walls.new_wall(love.graphics.getWidth() - walls.wall_thickness, 0, walls.wall_thickness, love.graphics.getHeight())
+	local top_wall = walls.new_wall(0, 0, love.graphics.getWidth(), walls.wall_thickness)
+	local bottom_wall = walls.new_wall(0, love.graphics.getHeight() - walls.wall_thickness, love.graphics.getWidth(), walls.wall_thickness) 
+	walls.current_level_walls["left"] = left_wall
+	walls.current_level_walls["right"] = right_wall
+	walls.current_level_walls["top"] = top_wall
+	walls.current_level_walls["bottom"] = bottom_wall
 end
 function walls.draw()
 	for _, wall in pairs(walls.current_level_walls) do
@@ -120,21 +122,74 @@ function walls.update(dt)
 	end
 end
 
+--collisions!
+local collisions = {}
+function collisions.resolve_collisions()
+	collisions.ball_platform_collision(ball, platform)
+	collisions.ball_bricks_collision(ball, bricks)
+	collisions.ball_walls_collision(ball, walls)
+	collisions.platform_walls_collision(platform, walls)
+end
+--check if rectangles overlap
+function collisions.check_rectangle_overlap(a,b)
+	local overlap = false
+	--if any condition is true, rectangles are overlapping 
+	if not (a.x + a.width < b.x or b.x + b.width < a.x or a.y + a.height < b.y or b.y + b.height < a.y) then
+		overlap = true
+	end
+	return overlap
+end
+--check if the objects in the game overlap
+--hitbox of the ball is treated as a rectangle, for the sake of simplicity
+function collisions.ball_platform_collision(ball, platform)
+	local a = {x = platform.position_x, y = platform.position_y, width = platform.width, height = platform.height}
+	local b = {x = ball.position_x - ball.radius, y = ball.position_y - ball.radius, width = ball.radius*2, height = ball.radius*2}
+	if collisions.check_rectangle_overlap(a,b) then
+		print ("Collide!")
+	end
+end
+function collisions.ball_bricks_collision(ball, bricks)
+	local b = {x = ball.position_x - ball.radius, y = ball.position_y - ball.radius, width = ball.radius*2, height = ball.radius*2}
+	for i, brick in pairs(bricks.current_level_bricks) do
+		local a = {x = brick.position_x, y = brick.position_y, width = brick.width, height = brick.height}	
+		if collisions.check_rectangle_overlap(a,b) then
+			print ("Collide!!")
+		end
+	end
+end
+function collisions.ball_walls_collision(ball, walls)
+	local b = {x = ball.position_x - ball.radius, y = ball.position_y - ball.radius, width = ball.radius*2, height = ball.radius*2}
+	for i, wall in pairs(walls.current_level_walls) do
+		local a = {x = wall.position_x, y = wall.position_y, width = wall.width, height = wall.height}
+		if collisions.check_rectangle_overlap(a,b) then
+			print ("Collide!!!")
+		end
+	end
+end
+function collisions.platform_walls_collision(platform, walls)
+	local a = {x = platform.position_x, y = platform.position_y, width = platform.width, height = platform.height}
+	for i, wall in pairs(walls.current_level_walls) do
+		local b = {x = wall.position_x, y = wall.position_y, width = wall.width, height = wall.height}
+		if collisions.check_rectangle_overlap(a,b) then
+			print ("Collide!!!!11!")
+		end
+	end
+end
 
-function love.load()
+function love.load() --LOVE function called when game loads
 	bricks.construct_level()
 	walls.construct_walls()
 end
 
-function love.update(dt)
+function love.update(dt) --LOVE function that updates things continually until the game is closed (dt = Delta Time)
 	ball.update(dt)
 	platform.update(dt)
 	bricks.update(dt)
 	walls.update(dt)
-
+	collisions.resolve_collisions()
 end
 
-function love.draw()		
+function love.draw() --LOVE function that draws things on screen	
 	ball.draw()
 	platform.draw()
 	bricks.draw()
@@ -142,6 +197,6 @@ function love.draw()
 
 end
 
-function love.quit()
+function love.quit() --LOVE function called when game closes
 	print("X(")
 end

@@ -53,6 +53,9 @@ end
 function platform.draw()
 	love.graphics.rectangle('fill', platform.position_x, platform.position_y, platform.width, platform.height)
 end
+function platform.stop(x,y)
+	platform.position_x = platform.position_x + x
+end
 
 --Brick object
 local bricks = {}
@@ -156,12 +159,12 @@ function collisions.check_rectangle_overlap(a,b)
 	--if any condition is true, rectangles are overlapping 
 	if not (a.x + a.width < b.x or b.x + b.width < a.x or a.y + a.height < b.y or b.y + b.height < a.y) then
 		overlap = true
-		if (a.x + a.width) < (b.x + b.width) then
+		if (a.x + a.width / 2) < (b.x + b.width / 2) then
 			shift_b_x = (a.x + a.width) - b.x
 		else
 			shift_b_x = a.x - (b.x + b.width)
 		end
-		if (a.y + a.height) < (b.y + b.height) then
+		if (a.y + a.height / 2) < (b.y + b.height / 2) then
 			shift_b_y = (a.y + a.height) - b.y
 		else
 			shift_b_y = a.y - (b.y + b.height)
@@ -205,11 +208,13 @@ function collisions.ball_walls_collision(ball, walls)
 	end
 end
 function collisions.platform_walls_collision(platform, walls)
+	local overlap, stop_platform_x, stop_platform_x
 	local a = {x = platform.position_x, y = platform.position_y, width = platform.width, height = platform.height}
 	for i, wall in pairs(walls.current_level_walls) do
 		local b = {x = wall.position_x, y = wall.position_y, width = wall.width, height = wall.height}
-		if collisions.check_rectangle_overlap(a,b) then
-			print ("Collide!!!!11!")
+		overlap, stop_platform_x, stop_platform_y = collisions.check_rectangle_overlap(a,b)
+		if overlap then
+			platform.stop(stop_platform_x, stop_platform_y)
 		end
 	end
 end

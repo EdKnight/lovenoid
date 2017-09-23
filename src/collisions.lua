@@ -1,6 +1,6 @@
 --collisions!
 local collisions = {}
-function collisions.resolve_collisions()
+function collisions.resolve_collisions(ball, platform, walls, bricks)
 	collisions.ball_platform_collision(ball, platform)
 	collisions.ball_bricks_collision(ball, bricks)
 	collisions.ball_walls_collision(ball, walls)
@@ -47,7 +47,7 @@ function collisions.ball_walls_collision(ball, walls)
 		end
 	end
 end
-function collisions.platform_walls_collision()
+function collisions.platform_walls_collision(platform, walls)
 	local overlap, stop_platform_x, stop_platform_x
 	for _, wall in pairs(walls.current_level_walls) do
 		--there was a bug because the first argument must be the fixed one, and the second must be the moving one

@@ -7,6 +7,7 @@ levels.sequence = require "levels/sequence"
 --new level
 function levels.switch_to_next_level(bricks, ball)
 	if bricks.no_more_bricks then
+		bricks.clear_current_level_bricks()
 		if levels.current_level < #levels.sequence then
 			levels.current_level = levels.current_level + 1
 			level = levels.require_current_level()
